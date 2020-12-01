@@ -1,4 +1,6 @@
 use std::fs;
+use std::collections::HashMap;
+use combinations::Combinations;
 
 fn read_file() -> String {
     let contents = fs::read_to_string("./input.txt")
@@ -26,7 +28,7 @@ fn main() {
             }
         }
     }
-
+        
     // Part 2
     for x in 0..n {
         for y in x+1..n {
@@ -37,6 +39,18 @@ fn main() {
                 }
 
             }
+        }
+    }
+
+    // Part 1 & 2 version 2
+    for n in 2..4 {
+        let result: HashMap<i32, Vec<i32>> = Combinations::new(values.clone(), n)
+            .filter(|v| (v.iter().fold(0, |a, b| a + *b) == 2020))
+            .map(|v| (v.iter().fold(1, |a, b| a * *b), v.clone()))
+            .collect();
+
+        for (key, val) in result.into_iter() {
+            println!("{}: {} {:?}", n, key, val);
         }
     }
 }
