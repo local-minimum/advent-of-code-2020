@@ -27,6 +27,7 @@ fn main() {
         }
     }
 
+    // Part 2
     for x in 0..n {
         for y in x+1..n {
             for z in y+1..n {
