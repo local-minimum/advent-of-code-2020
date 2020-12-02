@@ -1,48 +1,63 @@
 use std::fs;
 use regex::Regex;
 
-struct Pass {
-    pwd: String,
-    low: usize,
-    high: usize,
-    val: char,
-}
-
-
-fn read_data() -> Vec<Pass> {
-    let re = Regex::new(r"^(\d+)-(\d+) ([a-z]): ([a-z]+)$").unwrap();
+fn read_data() -> String {
     let lines = fs::read_to_string("./input.txt")
-        .unwrap()
-        .lines()
-        .map(|l| re.captures(l.trim()).unwrap())
-        .map(|c| Pass {
-            pwd: String::from(&c[3]),
-            val: c[2].chars().next().unwrap(),
-            low: c[0].parse::<usize>().unwrap(),
-            high: c[1].parse::<usize>().unwrap(),
-        })
-        .collect();
+        .unwrap();
     return lines
 }
 
-trait Ranged {
+trait InRanged {
     fn in_range(&self, low: usize, high: usize) -> bool;
 }
 
-impl Ranged for usize {
+impl InRanged for usize {
     fn in_range(&self, low: usize, high: usize) -> bool {
         return *self >= low && *self <= high
     }
 }
 
-fn main() {
-    let lines = read_data();
-    let filtered = lines
-        .iter()
-        .filter(|v| v.pwd.matches(v.val).count().in_range(v.low, v.high));
+trait Password {
+    fn valid(&self, chr: char, idx1: usize, idx2: usize) -> bool;
+}
 
-    for line in filtered {
-        println!("{} has {} - {} {}", line.pwd, line.val, line.low, line.high);
+impl Password for String {
+    fn valid(&self, chr: char, idx1: usize, idx2: usize) -> bool {
+        let mut matches = 0;
+        let mut chars = self.chars();
+        for idx in 1..idx2 + 1 {
+            let c = chars.next().unwrap();
+            if idx == idx1 && c == chr {
+                matches += 1;
+            } else if idx == idx2 && c == chr {
+                matches += 1;
+            }
+        }
+        return matches == 1;
     }
-    
+}
+
+fn main() {
+    let re = Regex::new(r"^(\d+)-(\d+) ([a-z]): ([a-z]+)$").unwrap();
+    let data = read_data();
+
+    // Part 1 & Part 2
+    let mut valid_part1: usize = 0;
+    let mut valid_part2: usize = 0;
+    for line in data.lines().map(|l| l.trim()) {
+        let caps = re.captures(line)
+            .expect("Could not parse line");
+        let pwd =  String::from(&caps[4]);
+        let chr = caps[3].chars().next().unwrap();
+        let low = caps[1].parse::<usize>().unwrap();
+        let high = caps[2].parse::<usize>().unwrap();
+        if pwd.matches(chr).count().in_range(low, high) {
+            valid_part1+=1;
+        }
+        if pwd.valid(chr, low, high) {
+            valid_part2+=1;
+        }
+    }
+    println!("{} valid passwords part 1", valid_part1);
+    println!("{} valid passwords part 2", valid_part2);
 }
