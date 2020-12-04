@@ -246,7 +246,7 @@ fn main() {
         totals += strict_pass;
     }
 
-    println!("{} {} {}", passports, northpoles, passports + northpoles);
-    println!("{} {} {}", passports_strict, northpoles_strict, passports_strict + northpoles_strict);
-    println!("Individual strict rule passes {:?}", totals);
+    println!("Part 1, Pass: {} North Poles: {} Sum: {}", passports, northpoles, passports + northpoles);
+    println!("Part 2, Pass: {} North Poles: {} Sum: {}", passports_strict, northpoles_strict, passports_strict + northpoles_strict);
+    println!("Debug individual strict rule passes {:?}", totals);
 }
