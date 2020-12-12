@@ -73,7 +73,7 @@ impl Point {
         Point{lat: self.lat * magnitude, lon: self.lon * magnitude}
     }
 
-    fn print(&self) {
+    fn as_string(&self) -> String {
         let ew = match self.lon > 0 {
             true => "east",
             false => "west",
@@ -82,7 +82,7 @@ impl Point {
             true => "north",
             false => "south",
         };
-        println!("{} {}, {} {}", ew, self.lon, nw, self.lat);
+        format!("{} {}, {} {}", ew, self.lon.abs(), nw, self.lat.abs())
     }
 }
 
@@ -152,18 +152,18 @@ fn main() {
     for line in data.lines() {
         boat.enact(line);
         if verbose {
-            boat.pos.print();
+            println!("{}", boat.pos.as_string());
         }
     }
+    println!("\nBoat ended up at: {}", boat.pos.as_string());
     println!("\nPart 1: Manhattan distance travelled: {}", boat.pos.manhattan());
     let mut boat2 = Boat2::origin();
     for line in data.lines() {
         boat2.enact(line);
         if verbose {
-            println!("-----");
-            boat2.waypoint.print();
-            boat2.pos.print();
+            println!("{}\t wp {}", boat2.pos.as_string(), boat2.waypoint.as_string());
         }
     }
-    println!("\nPart 2: Manhattan distance travelled: {}", boat2.pos.manhattan());
+    println!("\nBoat ended up at: {}", boat2.pos.as_string());
+    println!("Part 2: Manhattan distance travelled: {}", boat2.pos.manhattan());
 }
