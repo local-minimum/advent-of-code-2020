@@ -1,4 +1,6 @@
-use std::{collections::{HashMap}, ops::{Add, AddAssign}, fs};
+extern crate pancurses;
+use std::{collections::{HashMap, HashSet}, fs, ops::{Add, AddAssign}};
+use pancurses::{Input, Window, endwin, initscr, noecho};
 
 fn load_demo() -> String {
     r#"sesenwnenenewseeswwswswwnenewsewsw
@@ -101,6 +103,17 @@ impl AxialCoords {
             r: cube.z,
         }
     }
+
+    fn to_xy(&self, ref_x: &i32, ref_y: &i32) -> Option<(i32, i32)> {
+        let x = ref_x + self.q * 2 + self.r;
+        let y = ref_y + self.r;
+
+        if x > 0 && y > 0 {
+            Some((x, y))
+        } else {
+            None
+        }
+    }
 }
 
 fn parse_line(line: &str) -> CubeCoords {
@@ -122,9 +135,57 @@ fn parse_line(line: &str) -> CubeCoords {
     coords
 }
 
+fn next_day(mut blacks: Vec<CubeCoords>) -> Vec<CubeCoords> {
+    let mut neighbours: HashMap<AxialCoords, usize> = HashMap::new();
+    for black in blacks.iter() {
+        for n in black.neighbours() {
+            let count = neighbours.entry(AxialCoords::from_cube(&n)).or_insert(0);
+            *count += 1;
+        }
+    }
+    let old_black: HashSet<AxialCoords> = blacks
+        .iter()
+        .map(|c| AxialCoords::from_cube(c))
+        .collect();
+
+    let new_black: Vec<CubeCoords> = neighbours
+        .iter()
+        .filter(|(c, v)| **v == 2 && !old_black.contains(c))
+        .map(|(c, _)| CubeCoords::from_axial(c))
+        .collect();
+
+    blacks = blacks
+        .iter()
+        .map(|c| (c, *neighbours.get(&AxialCoords::from_cube(c)).or(Some(&0)).unwrap()))
+        .filter(|(_, n)| *n == 1 || *n == 2)
+        .map(|(c, _)| c)
+        .copied()
+        .collect();
+    blacks.extend(new_black);
+    blacks
+}
+
+fn draw(window: &Window, part1: &usize, day: &usize, blacks: &Vec<CubeCoords>) {
+    window.clear();
+    for b in blacks {
+        match AxialCoords::from_cube(b).to_xy(&40, &11) {
+            Some((x, y)) => {
+                window.mvaddstr(y, x - 1, "[]");
+            },
+            None => {},
+        }
+    }
+        
+    window.mvaddstr( 23, 1, format!("Part 1: #{} black | Day {}, {} black", part1, day, blacks.len()));
+    window.mvaddstr( 23, 60, "(n)ext day / (q)uit ");
+    window.keypad(true);
+    window.border('|', '|', '-', '-', '/', '\\', '\\', '/');
+    window.refresh();
+}
 
 fn main() {
-    let is_demo = true;
+    let is_demo = false;
+    let window = initscr();
     let data = match is_demo { true => load_demo(), false => load_data() };
     let mut tiles = vec![];
     for line in data.lines() {
@@ -140,26 +201,20 @@ fn main() {
         .filter(|(_, v)| *v % 2 == 1)
         .map(|(ax, _)| CubeCoords::from_axial(ax))
         .collect();
-    println!("{} black tiles {} manipulated", blacks.len(), flips.len());
-    let mut neighbours: HashMap<AxialCoords, usize> = HashMap::new();
-    for black in blacks.iter() {
-        for n in black.neighbours() {
-            let count = neighbours.entry(AxialCoords::from_cube(&n)).or_insert(0);
-            *count += 1;
+    let part1 = blacks.len();
+    let mut day = 0;
+    noecho();
+    draw(&window, &part1, &day, &blacks);
+    loop {
+        match window.getch() {
+            Some(Input::Character('q')) => break,
+            Some(Input::Character('n')) => {
+                blacks = next_day(blacks);
+                day += 1;
+                draw(&window, &part1, &day, &blacks);
+            }
+            _ => {},
         }
     }
-    blacks = blacks
-        .iter()
-        .filter(|c| *neighbours.get(&AxialCoords::from_cube(c)).or(Some(&0)).unwrap() != 2)
-        .copied()
-        .collect();
-
-    println!("Day 1 (remove rule 1): {}", blacks.len());
-    blacks.extend(
-        neighbours
-            .iter()
-            .filter(|(_, v)| **v == 2)
-            .map(|(c, _)| CubeCoords::from_axial(c))
-    );
-    println!("Day 1: {}", blacks.len());
+    endwin();
 }
